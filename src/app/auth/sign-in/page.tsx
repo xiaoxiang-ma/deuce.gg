@@ -10,6 +10,8 @@ export default function SignInPage() {
             card: "bg-white shadow-md",
           },
         }}
+        routing="path"
+        path="/auth/sign-in"
         afterSignInUrl="/dashboard"
         signUpUrl="/auth/sign-up"
       />
