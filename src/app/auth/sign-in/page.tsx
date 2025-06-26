@@ -1,6 +1,20 @@
-import { SignIn } from "@clerk/nextjs";
+'use client';
+
+import { SignIn, useAuth } from "@clerk/nextjs";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SignInPage() {
+  const { userId, isLoaded } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoaded && userId) {
+      console.log("User is authenticated, redirecting to dashboard...");
+      router.push("/dashboard");
+    }
+  }, [isLoaded, userId, router]);
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-24">
       <SignIn
