@@ -3,22 +3,17 @@ import { NextResponse } from "next/server";
 
 export default authMiddleware({
   // Public routes that don't require authentication
-  publicRoutes: ["/", "/auth/sign-in", "/auth/sign-up"],
+  publicRoutes: ["/"],
   afterAuth(auth, req) {
-    // Handle users who aren't authenticated
+    // If the user is not signed in and the route requires auth
     if (!auth.userId && !auth.isPublicRoute) {
       return redirectToSignIn({ returnBackUrl: req.url });
     }
 
-    // If the user is logged in and trying to access a protected route, allow them
-    if (auth.userId && !auth.isPublicRoute) {
-      return NextResponse.next();
-    }
-
-    // If the user is logged in and trying to access auth pages, redirect them to dashboard
-    if (auth.userId && auth.isPublicRoute && (
-      req.nextUrl.pathname === "/auth/sign-in" || 
-      req.nextUrl.pathname === "/auth/sign-up"
+    // If the user is signed in and trying to access auth pages, redirect to dashboard
+    if (auth.userId && (
+      req.nextUrl.pathname.startsWith("/auth/") ||
+      req.nextUrl.pathname === "/"
     )) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }

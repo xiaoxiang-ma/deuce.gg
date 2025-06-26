@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuth } from "@clerk/nextjs";
+import { UserButton, useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -11,14 +11,16 @@ export default function DashboardPage() {
   useEffect(() => {
     if (isLoaded && !userId) {
       console.log("User not authenticated, redirecting to sign-in...");
-      router.push("/auth/sign-in");
-    } else if (isLoaded && userId) {
-      console.log("User authenticated, showing dashboard...");
+      router.replace("/auth/sign-in");
     }
   }, [isLoaded, userId, router]);
 
   if (!isLoaded) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
   }
 
   if (!userId) {
@@ -27,8 +29,11 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen p-8">
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      <p>Welcome to your dashboard! User ID: {userId}</p>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <UserButton afterSignOutUrl="/auth/sign-in" />
+      </div>
+      <p>Welcome to your dashboard! You are successfully logged in.</p>
     </div>
   );
 } 
