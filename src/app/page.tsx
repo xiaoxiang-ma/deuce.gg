@@ -21,12 +21,12 @@ export default async function HomePage() {
           Track your progress with our ELO rating system.
         </p>
         <div className="space-x-4">
-          <SignInButton mode="modal" afterSignInUrl="/dashboard">
+          <SignInButton mode="modal" redirectUrl="/dashboard">
             <button className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
               Sign In
             </button>
           </SignInButton>
-          <SignUpButton mode="modal" afterSignUpUrl="/onboarding">
+          <SignUpButton mode="modal" redirectUrl="/onboarding">
             <button className="inline-block bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold border-2 border-blue-600 hover:bg-blue-50 transition-colors">
               Sign Up
             </button>
