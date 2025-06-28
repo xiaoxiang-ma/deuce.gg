@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs";
+import { auth, currentUser } from "@clerk/nextjs";
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -18,15 +18,19 @@ const mockStats = {
 
 export default async function DashboardPage() {
   const { userId } = auth();
+  const user = await currentUser();
   
-  if (!userId) {
-    redirect("/");
+  if (!userId || !user) {
+    redirect("/auth/sign-in?redirect_url=/dashboard");
   }
 
   return (
     <div className="min-h-screen p-8 bg-gray-50">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-blue-900">Dashboard</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-blue-900">Dashboard</h1>
+          <p className="text-gray-600">Welcome back, {user.firstName || user.username}!</p>
+        </div>
         <UserButton afterSignOutUrl="/" />
       </div>
 

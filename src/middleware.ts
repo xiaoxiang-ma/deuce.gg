@@ -2,7 +2,13 @@ import { authMiddleware } from "@clerk/nextjs";
 
 export default authMiddleware({
   // Public routes that don't require authentication
-  publicRoutes: ["/", "/auth/sign-in", "/auth/sign-up"],
+  publicRoutes: ["/"],
+  afterAuth(auth, req) {
+    // Handle authenticated users trying to access public routes
+    if (auth.userId && req.nextUrl.pathname === "/") {
+      return Response.redirect(new URL("/dashboard", req.url));
+    }
+  }
 });
 
 // Protect all routes except static files and API routes
