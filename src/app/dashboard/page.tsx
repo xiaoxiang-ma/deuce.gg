@@ -1,7 +1,7 @@
-'use client';
-
+import { auth } from "@clerk/nextjs";
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 // Temporary mock data - replace with actual data fetching
 const mockStats = {
@@ -16,7 +16,13 @@ const mockStats = {
   ]
 };
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const { userId } = auth();
+  
+  if (!userId) {
+    redirect("/");
+  }
+
   return (
     <div className="min-h-screen p-8 bg-gray-50">
       <div className="flex justify-between items-center mb-8">
