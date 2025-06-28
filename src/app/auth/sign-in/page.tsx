@@ -1,23 +1,12 @@
 import { SignIn } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
 
-export default function SignInPage({
-  searchParams,
-}: {
-  searchParams: { redirect_url?: string };
-}) {
+export default function SignInPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-blue-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <SignIn 
-        appearance={{
-          elements: {
-            rootBox: "mx-auto",
-            card: "bg-white shadow-md",
-          },
-        }}
-        redirectUrl={searchParams.redirect_url || "/dashboard"}
-        routing="path"
-        path="/auth/sign-in"
-        signUpUrl="/auth/sign-up"
+        afterSignInUrl="/dashboard"
+        redirectUrl="/dashboard"
       />
     </div>
   );
