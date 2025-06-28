@@ -2,48 +2,125 @@
 
 This document outlines the core user authentication flow for the tennis matchmaking platform.
 
-## Authentication and Landing Page Flow
+## Initial Landing Flow
 
 ```mermaid
 flowchart TD
-    A["Visitor lands on<br/>Landing Page<br/>/page.tsx"] --> B{"Is user<br/>authenticated?"}
-    B -->|No| C["Landing Page Content<br/>• Value Proposition<br/>• Call to Action"]
-    C -->|"Click Sign In/Sign Up"| D["Clerk Auth Pages<br/>/auth/sign-in<br/>/auth/sign-up"]
-    D -->|"Successful Authentication"| E["Dashboard<br/>/dashboard"]
-    B -->|Yes| E
-    E --> F["Quick Stats<br/>(ELO, recent matches)"]
-    E --> G["Upcoming Sessions"]
-    E --> H["Quick Actions"]
-    
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style C fill:#dfd,stroke:#333,stroke-width:2px
-    style E fill:#bbf,stroke:#333,stroke-width:2px
+    A[Visit deuce-gg.vercel.app] --> B{Middleware Check<br/>Is user authenticated?}
+    B -->|Yes| C[Redirect to /dashboard]
+    B -->|No| D[Show Landing Page<br/>with Sign In/Up Modals]
 ```
 
-## Flow Description
+## Authentication Paths
 
-1. **Initial Landing**
-   - All visitors first see the landing page (`/page.tsx`)
-   - Contains value proposition and call-to-action buttons
+### Path A - Modal Authentication (from Landing)
+```mermaid
+flowchart TD
+    A[Landing Page] --> B[Click Sign In Button]
+    B --> C[Clerk Modal Opens]
+    C --> D{Auth Success?}
+    D -->|Yes| E[Redirect to /dashboard<br/>via redirectUrl prop]
+    D -->|No| F[Stay in Modal<br/>Show Error]
+```
 
-2. **Authentication Check**
-   - Authenticated users are automatically redirected to dashboard
-   - Non-authenticated users remain on landing page
+### Path B - Direct Dashboard Access
+```mermaid
+flowchart TD
+    A[Visit /dashboard directly] --> B{Middleware Check<br/>Is user authenticated?}
+    B -->|No| C[Redirect to /auth/sign-in<br/>with redirect_url=/dashboard]
+    B -->|Yes| D[Show Dashboard]
+    C --> E[Complete Sign In]
+    E --> D
+```
 
-3. **Authentication Flow**
-   - Sign In/Sign Up buttons direct to Clerk authentication pages
-   - Located at `/auth/sign-in` or `/auth/sign-up`
+## Component Responsibilities
 
-4. **Post-Authentication**
-   - Successful authentication leads to dashboard
-   - Dashboard displays:
+### 1. Middleware (`src/middleware.ts`)
+- Protects all routes
+- Handles authentication checks
+- Manages redirects for unauthenticated users
+```typescript
+publicRoutes: ["/", "/auth/sign-in", "/auth/sign-up"]
+afterAuth(auth, req) {
+  // Redirect authenticated users from landing
+  if (auth.userId && req.nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  // Redirect unauthenticated users to sign in
+  if (!auth.userId && !req.nextUrl.pathname.startsWith("/auth/")) {
+    const signInUrl = new URL("/auth/sign-in", req.url);
+    signInUrl.searchParams.set("redirect_url", req.nextUrl.pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+}
+```
+
+### 2. Landing Page (`src/app/page.tsx`)
+- Entry point for new users
+- Provides modal-based authentication
+- Contains value proposition and CTAs
+```typescript
+<SignInButton mode="modal" redirectUrl="/dashboard">
+  <button>Sign In</button>
+</SignInButton>
+```
+
+### 3. Sign In Page (`src/app/auth/sign-in/page.tsx`)
+- Handles full-page authentication
+- Manages redirect URLs
+```typescript
+<SignIn 
+  redirectUrl={searchParams.redirect_url || "/dashboard"}
+  afterSignInUrl={searchParams.redirect_url || "/dashboard"}
+  signUpUrl="/auth/sign-up" 
+/>
+```
+
+### 4. Dashboard Page (`src/app/dashboard/page.tsx`)
+- Protected route
+- Verifies authentication
+- Shows personalized content
+```typescript
+const { userId } = auth();
+const user = await currentUser();
+
+if (!userId || !user) {
+  redirect("/auth/sign-in?redirect_url=/dashboard");
+}
+```
+
+## Authentication Flow Details
+
+1. **First-Time Visit**
+   - User lands on `/`
+   - Middleware allows access (public route)
+   - Shows landing page with auth buttons
+
+2. **Authentication Options**
+   - **Modal Flow** (from landing page):
+     - Click Sign In → Clerk modal opens
+     - Enter credentials
+     - Success → Redirect to `/dashboard`
+   - **Direct Access Flow**:
+     - Visit `/dashboard`
+     - Middleware redirects to sign in if needed
+     - After auth → Return to dashboard
+
+3. **Post-Authentication**
+   - Dashboard performs final auth check
+   - Fetches user data
+   - Displays personalized content:
      - Quick Stats
      - Upcoming Sessions
      - Quick Actions
 
-## Implementation Notes
+## Security Notes
 
-- Landing page should focus on converting visitors to signed-up users
-- Dashboard serves as the main hub for authenticated users
-- Authentication is handled entirely by Clerk
-- All post-authentication pages should be protected routes 
+- Multiple layers of protection:
+  1. Middleware route protection
+  2. Clerk authentication handling
+  3. Component-level verification
+- Secure redirect handling
+- Preserved user intent through auth flow
+- Protected routes require valid session 

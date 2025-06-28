@@ -6,11 +6,18 @@ export default function SignInPage({
   searchParams: { redirect_url?: string };
 }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-24">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-blue-100 p-4">
       <SignIn 
+        appearance={{
+          elements: {
+            rootBox: "mx-auto",
+            card: "bg-white shadow-md",
+          },
+        }}
         redirectUrl={searchParams.redirect_url || "/dashboard"}
-        afterSignInUrl={searchParams.redirect_url || "/dashboard"}
-        signUpUrl="/auth/sign-up" 
+        routing="path"
+        path="/auth/sign-in"
+        signUpUrl="/auth/sign-up"
       />
     </div>
   );

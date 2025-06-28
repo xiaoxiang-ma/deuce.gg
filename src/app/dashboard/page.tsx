@@ -3,7 +3,7 @@ import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-// Temporary mock data - replace with actual data fetching
+// Temporary mock data
 const mockStats = {
   elo: 1200,
   recentMatches: [
@@ -21,19 +21,21 @@ export default async function DashboardPage() {
   const user = await currentUser();
   
   if (!userId || !user) {
-    redirect("/auth/sign-in?redirect_url=/dashboard");
+    redirect("/auth/sign-in");
   }
 
   return (
     <div className="min-h-screen p-8 bg-gray-50">
+      {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-blue-900">Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user.firstName || user.username}!</p>
+          <h1 className="text-2xl font-bold text-blue-900">Welcome to Your Dashboard</h1>
+          <p className="text-gray-600">Hello, {user.firstName || user.username}!</p>
         </div>
         <UserButton afterSignOutUrl="/" />
       </div>
 
+      {/* Dashboard Content */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Quick Stats */}
         <div className="bg-white p-6 rounded-xl shadow-sm">
