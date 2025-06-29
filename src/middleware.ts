@@ -1,33 +1,35 @@
 import { authMiddleware } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
 
+// Define public routes that don't require authentication
+const publicRoutes = [
+  "/",
+  "/auth/sign-in",
+  "/auth/sign-up"
+];
+
 // This example protects all routes including api/trpc routes
-// Please edit this to allow other routes to be public as needed.
 // See https://clerk.com/docs/references/nextjs/auth-middleware for more information about configuring your middleware
 export default authMiddleware({
-  publicRoutes: ["/"],
+  publicRoutes,
   
   afterAuth(auth, req) {
-    // If the user is logged in and on the home page, redirect to dashboard
-    if (auth.userId && req.nextUrl.pathname === "/") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
+    // Get the pathname of the request
+    const { pathname } = req.nextUrl;
 
-    // Handle authenticated users
+    // If the user is logged in...
     if (auth.userId) {
-      // Redirect from auth pages or root to dashboard
-      if (req.nextUrl.pathname === "/" || req.nextUrl.pathname.startsWith("/auth")) {
+      // and trying to access auth pages or landing, redirect to dashboard
+      if (pathname === "/" || pathname.startsWith("/auth")) {
         return NextResponse.redirect(new URL("/dashboard", req.url));
       }
-      
-      // Allow access to all other routes
       return NextResponse.next();
     }
 
-    // Handle non-authenticated users
-    if (!auth.userId && !req.nextUrl.pathname.startsWith("/auth/") && req.nextUrl.pathname !== "/") {
+    // If the user is not logged in and trying to access a protected route
+    if (!auth.userId && !pathname.startsWith("/auth") && !publicRoutes.includes(pathname)) {
       const signInUrl = new URL("/auth/sign-in", req.url);
-      signInUrl.searchParams.set("redirect_url", req.nextUrl.pathname);
+      signInUrl.searchParams.set("redirect_url", pathname);
       return NextResponse.redirect(signInUrl);
     }
 
