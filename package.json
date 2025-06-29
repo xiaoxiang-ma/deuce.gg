@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^4.29.9",
+    "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.39.8",
+    "date-fns": "^4.1.0",
     "next": "^14.2.25",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
@@ -26,4 +28,4 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.4.2"
   }
-} 
+}
