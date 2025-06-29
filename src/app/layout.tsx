@@ -5,8 +5,19 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Simple Auth Demo',
-  description: 'A simple authentication demo with Clerk',
+  title: 'Deuce.gg - Tennis Matchmaking',
+  description: 'Find your perfect tennis match',
+}
+
+// Debug component to track auth state changes
+function AuthDebugger({ children }: { children: React.ReactNode }) {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[AuthDebug] Layout rendering', {
+      timestamp: new Date().toISOString(),
+      pathname: typeof window !== 'undefined' ? window.location.pathname : 'SSR',
+    });
+  }
+  return <>{children}</>;
 }
 
 export default function RootLayout({
@@ -15,10 +26,16 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        baseTheme: undefined // Prevents flash of unstyled content
+      }}
+    >
       <html lang="en">
         <body className={inter.className}>
-          {children}
+          <AuthDebugger>
+            {children}
+          </AuthDebugger>
         </body>
       </html>
     </ClerkProvider>
