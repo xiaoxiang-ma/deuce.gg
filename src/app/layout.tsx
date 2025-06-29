@@ -1,6 +1,7 @@
 import { Inter } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
+import { checkClerkConfig } from '@/lib/debug-utils'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,6 +26,11 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Check Clerk configuration in development
+  if (process.env.NODE_ENV === 'development') {
+    checkClerkConfig();
+  }
+
   return (
     <ClerkProvider
       appearance={{
