@@ -114,18 +114,39 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
 
   const handleRequestAction = async (requestId: string, action: 'accepted' | 'declined') => {
     try {
-      const { error: updateError } = await supabase
-        .from('match_requests')
-        .update({ status: action })
-        .eq('id', requestId);
+      if (action === 'accepted' && session) {
+        // Start a transaction to update both the request and session
+        const { error: updateError } = await supabase.rpc('handle_match_request', {
+          p_request_id: requestId,
+          p_session_id: session.id,
+          p_action: action
+        });
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
+      } else {
+        // For declined requests, just update the request status
+        const { error: updateError } = await supabase
+          .from('match_requests')
+          .update({ status: action })
+          .eq('id', requestId);
 
+        if (updateError) throw updateError;
+      }
+
+      // Show success message
+      setError(null);
+      
       // Refresh data
       fetchSessionData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating request:', err);
-      setError(`Failed to ${action} request. Please try again.`);
+      if (err?.message?.includes('session is full')) {
+        setError('Cannot accept request: session is already full');
+      } else if (err?.message?.includes('session is not open')) {
+        setError('Cannot accept request: session is no longer open');
+      } else {
+        setError(`Failed to ${action} request. Please try again.`);
+      }
     }
   };
 
@@ -236,64 +257,84 @@ export default function SessionDetailPage({ params }: { params: { id: string } }
           </div>
 
           {/* Match Requests Section */}
-          {isCreator && session.status === 'open' && (
+          {isCreator && (session.status === 'open' || requests.length > 0) && (
             <div className="p-6">
               <h2 className="text-lg font-semibold mb-4">Match Requests</h2>
-              {pendingRequests.length === 0 ? (
-                <p className="text-gray-500">No pending requests</p>
-              ) : (
-                <div className="space-y-4">
-                  {pendingRequests.map((request) => (
-                    <div
-                      key={request.id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium">{request.user.email}</p>
-                        <p className="text-sm text-gray-600">
-                          Skill Level: {request.user.skill_level.toFixed(1)} NTRP
-                        </p>
-                        {request.message && (
-                          <p className="text-sm text-gray-600 mt-1">{request.message}</p>
-                        )}
+              
+              {/* Pending Requests */}
+              {pendingRequests.length > 0 && (
+                <>
+                  <h3 className="text-md font-medium mb-2">Pending Requests</h3>
+                  <div className="space-y-4 mb-6">
+                    {pendingRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">{request.user.email}</p>
+                          <p className="text-sm text-gray-600">
+                            Skill Level: {request.user.skill_level.toFixed(1)} NTRP
+                          </p>
+                          {request.message && (
+                            <p className="text-sm text-gray-600 mt-1">{request.message}</p>
+                          )}
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleRequestAction(request.id, 'accepted')}
+                            disabled={session.status !== 'open' || session.current_players >= session.max_players}
+                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleRequestAction(request.id, 'declined')}
+                            className="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-600 rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          >
+                            Decline
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleRequestAction(request.id, 'accepted')}
-                          className="px-3 py-1 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => handleRequestAction(request.id, 'declined')}
-                          className="px-3 py-1 text-sm font-medium text-red-600 bg-white border border-red-600 rounded hover:bg-red-50"
-                        >
-                          Decline
-                        </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Accepted Requests */}
+              {acceptedRequests.length > 0 && (
+                <>
+                  <h3 className="text-md font-medium mb-2">Accepted Players</h3>
+                  <div className="space-y-4">
+                    {acceptedRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className="flex items-center justify-between p-4 bg-green-50 rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">{request.user.email}</p>
+                          <p className="text-sm text-gray-600">
+                            Skill Level: {request.user.skill_level.toFixed(1)} NTRP
+                          </p>
+                        </div>
+                        <span className="text-sm text-green-600 font-medium">
+                          Accepted
+                        </span>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {requests.length === 0 && (
+                <p className="text-gray-500">No requests yet</p>
+              )}
+
+              {error && (
+                <div className="mt-4 p-4 bg-red-50 rounded-lg">
+                  <p className="text-red-600">{error}</p>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Accepted Players Section */}
-          {acceptedRequests.length > 0 && (
-            <div className="p-6 border-t border-gray-200">
-              <h2 className="text-lg font-semibold mb-4">Accepted Players</h2>
-              <div className="space-y-2">
-                {acceptedRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="flex items-center space-x-2 text-sm text-gray-600"
-                  >
-                    <span>•</span>
-                    <span>{request.user.email}</span>
-                    <span>({request.user.skill_level.toFixed(1)} NTRP)</span>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
