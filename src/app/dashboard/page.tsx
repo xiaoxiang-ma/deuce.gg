@@ -5,6 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import { createBrowserClient } from '@supabase/ssr';
 import { format, parseISO } from 'date-fns';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 type Session = {
   id: string;
@@ -17,13 +18,26 @@ type Session = {
 };
 
 export default function DashboardPage() {
-  const { user } = useUser();
+  const router = useRouter();
+  const { user, isLoaded } = useUser();
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (isLoaded && !user) {
+      router.replace('/auth/sign-in');
+    }
+  }, [isLoaded, user, router]);
+
+  // If not authenticated, show nothing while redirecting
+  if (!isLoaded || !user) {
+    return null;
+  }
 
   useEffect(() => {
     const fetchUpcomingSessions = async () => {
