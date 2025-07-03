@@ -92,23 +92,59 @@ export default function BrowseSessionsPage() {
   }, [filters]);
 
   const handleJoinSession = async (sessionId: string) => {
+    if (!user) {
+      setError('You must be logged in to join a session.');
+      return;
+    }
+
     try {
-      const { error: supabaseError } = await supabase
+      // First check if user already has a request for this session
+      const { data: existingRequest, error: checkError } = await supabase
+        .from('match_requests')
+        .select('status')
+        .eq('session_id', sessionId)
+        .eq('requester_id', user.id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows found
+        throw checkError;
+      }
+
+      if (existingRequest) {
+        const status = existingRequest.status;
+        if (status === 'pending') {
+          setError('You have already requested to join this session. Please wait for the host to respond.');
+        } else if (status === 'accepted') {
+          setError('You are already part of this session!');
+        } else if (status === 'declined') {
+          setError('Your previous request was declined. Please contact the host if you wish to join.');
+        }
+        return;
+      }
+
+      // If no existing request, create a new one
+      const { error: insertError } = await supabase
         .from('match_requests')
         .insert([
           {
             session_id: sessionId,
-            requester_id: user?.id,
+            requester_id: user.id,
           },
         ]);
 
-      if (supabaseError) throw supabaseError;
+      if (insertError) throw insertError;
 
+      // Show success message
+      setError(null);
       // Refresh sessions to update UI
       fetchSessions();
-    } catch (err) {
+    } catch (err: any) { // Type as any since we're checking for specific properties
       console.error('Error joining session:', err);
-      setError('Failed to join session. Please try again.');
+      if (err?.code === '23505') { // Unique constraint violation
+        setError('You have already requested to join this session.');
+      } else {
+        setError('Failed to join session. Please try again.');
+      }
     }
   };
 
